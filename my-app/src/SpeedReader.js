@@ -1,34 +1,54 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
-const SpeedReader = ({ onQuit, text, readingSpeed }) => {
+const SpeedReader = ({ onQuit, text, displaySpeed, voiceSpeed, audibleReading }) => {
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const [words, setWords] = useState([]);
-  const [reading, setReading] = useState(false);
   const [showAllWords, setShowAllWords] = useState(false);
 
   useEffect(() => {
     setWords(text.split(' '));
   }, [text]);
 
+  const speak = useCallback((word) => {
+    if (audibleReading) {
+      const utterance = new SpeechSynthesisUtterance(word);
+      utterance.rate = parseFloat(voiceSpeed);
+      window.speechSynthesis.speak(utterance);
+    }
+  }, [voiceSpeed, audibleReading]);
+
   useEffect(() => {
     let interval;
-    if (reading && words.length > 0 && !showAllWords) {
+    if (!showAllWords && words.length > 0) {
       interval = setInterval(() => {
-        if (currentWordIndex < words.length - 1) {
-          setCurrentWordIndex((prevIndex) => prevIndex + 1);
+        const nextWordIndex = currentWordIndex + 1;
+        if (nextWordIndex < words.length) {
+          setCurrentWordIndex(nextWordIndex);
+          if (audibleReading) {
+            speak(words[nextWordIndex]);
+          }
         } else {
           clearInterval(interval);
-          setReading(false); // Stop reading at the end
         }
-      }, readingSpeed);
+      }, displaySpeed);
     }
-    return () => clearInterval(interval);
-  }, [reading, words, readingSpeed, currentWordIndex, showAllWords]);
+    return () => {
+      clearInterval(interval);
+      window.speechSynthesis.cancel(); // Stop speaking when component unmounts or updates
+    };
+  }, [currentWordIndex, words, displaySpeed, showAllWords, speak, audibleReading]);
 
   const handleWordSelect = (index) => {
     setCurrentWordIndex(index);
     setShowAllWords(false);
-    setReading(true);
+    if (audibleReading) {
+      speak(words[index]);
+    }
+  };
+
+  const handleQuit = () => {
+    window.speechSynthesis.cancel(); // Stop speaking when quitting
+    onQuit();
   };
 
   return (
@@ -36,9 +56,8 @@ const SpeedReader = ({ onQuit, text, readingSpeed }) => {
       {!showAllWords ? (
         <>
           <div className="word-display">{words[currentWordIndex]}</div>
-          <button onClick={() => setReading(!reading)}>{reading ? 'Pause' : 'Start'}</button>
-          <button onClick={() => setShowAllWords(true)}>Back</button>
-          <button onClick={onQuit}>Quit</button>
+          <button className="back-button" onClick={() => setShowAllWords(true)}>Look Back</button>
+          <button className="quit-button" onClick={handleQuit}>Quit</button>
         </>
       ) : (
         <div className="word-list">
