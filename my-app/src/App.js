@@ -104,6 +104,7 @@ function App() {
 
   return (
     <div className="App">
+      <title>ADHD Reader</title>
       <header className="App-header">
         {!showReader && <h1>ADHD Reader</h1>}
       </header>
