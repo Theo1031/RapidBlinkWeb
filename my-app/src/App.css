@@ -13,6 +13,7 @@
   font-size: 2.5em;
   margin-top: 20px;
   margin-bottom: 40px;
+
 }
 
 .input-area {
@@ -21,6 +22,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 100%;
+  
 }
 
 .input-area textarea {
@@ -79,8 +82,10 @@ button:hover {
   justify-content: center;
 }
 
+
+
 .word-display {
-  font-size: 4em; /* Large font size for focus */
+  font-size: 5em; 
   margin: 20px 0;
 }
 
@@ -113,8 +118,76 @@ button:hover {
   right: 20px;
 }
 
-.App-header h1 {
-  color: white; /* or any color of your choice */
-  font-size: 2em; /* Adjust size as needed */
-  margin-bottom: 20px; /* Spacing under the title */
+.toggle-button {
+  padding: 10px 20px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  margin: 20px;
+  transition: background-color 0.3s ease;
 }
+
+.login-land, .input-land {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+  background-color: white;
+  margin: 10px;
+}
+
+.input-field {
+  margin: 10px 0;
+  padding: 10px;
+  width: 200px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+}
+
+.button {
+  margin: 10px 0;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  background-color: #007BFF;
+  color: white;
+  cursor: pointer;
+}
+
+.button:hover {
+  background-color: #0056b3;
+}
+
+.toggle-button:hover {
+  background-color: #45a049;
+}
+
+.toggle-button:active {
+  background-color: #388e3c;
+}
+
+
+
+
+.App-header h1 {
+  color: white; 
+  font-size: 2em; 
+  margin-bottom: 20px; 
+}
+
+
+
+.login-area{
+  margin: 20px;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+

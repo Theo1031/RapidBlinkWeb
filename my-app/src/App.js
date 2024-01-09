@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import './App.css';
 import SpeedReader from './SpeedReader';
+import { updateUser, getUser } from './api';     
 
 function App() {
   const [prompt, setPrompt] = useState('');
@@ -12,6 +13,15 @@ function App() {
   const [showReader, setShowReader] = useState(false);
   const [audibleReading, setAudibleReading] = useState(false);
   const [summary, setSummary] = useState('');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [wordSpeed, setWordSpeed] = useState(2); 
+  const [chatSummarizationLimit, setChatSummarizationLimit] = useState(500);
+  const [loginUsername, setLoginUsername] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [showLoginForm, setShowLoginForm] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
+  const [showChatArea, setShowChatArea] = useState(false);
 
   const startReading = (audible = false) => {
     setAudibleReading(audible);
@@ -21,8 +31,62 @@ function App() {
   const handleQuit = () => {
     setShowReader(false);
   };
+  const handleRegister = async () => {
+    try {
+      const res = await axios.post('http://localhost:4003/api/register', {
+        username,
+        password,
+        wordSpeed,
+        chatSummarizationLimit
+      });
+      console.log(res.data); 
+    } catch (error) {
+      console.error('Registration error:', error.message);
+    }
+  }; 
+  const handleUpdateSettings = async () => {
+    try {
+      const res = await axios.post('http://localhost:4003/api/updateSettings', {
+        username: loginUsername,
+        newSettings: {
+          wordSpeed,
+          chatSummarizationLimit
+        }
+      });
+      console.log(res.data);
+    } catch (error) {
+      console.error('Update settings error:', error.message);
+    }
+  };
+  const handleLogin = async () => {
+    try {
+      const loginResponse = await axios.post('http://localhost:4003/api/login', {
+        username: loginUsername,
+        password: loginPassword
+      });
+  
+      localStorage.setItem('token', loginResponse.data.token); 
+  
+  
+      const settingsResponse = await getUser(loginUsername); 
+      if (settingsResponse.data) {
+        setWordSpeed(settingsResponse.data.wordSpeed);
+        setChatSummarizationLimit(settingsResponse.data.chatSummarizationLimit);
+     
+      }
+  
+     
+    } catch (error) {
+      console.error('Login error:', error.message);
+      
+    }
+  };
+  
+  
+  
 
   const handleChat = () => {
+    setShowChatArea(true);
     axios.post('http://localhost:4003/api/chat', { prompt: userInput })
       .then(response => {
         if (response.data) {
@@ -35,66 +99,101 @@ function App() {
         console.error('Error during chat:', error.message);
       });
   };
-  //Summarize text is not working, use chat
+
  
 
   return (
     <div className="App">
       <header className="App-header">
-        <h1>Speed Blink</h1>
+        {!showReader && <h1>ADHD Reader</h1>}
       </header>
+      
+      {!showReader && (
+  <div>
+    <button className="toggle-button" onClick={() => setShowOptions(!showOptions)}>
+      {showOptions ? 'Hide Options' : 'Show Options'}
+    </button>
+  </div>
+)}
+{!showReader && showOptions && (
+  <div className="container">
+    <div className="login-land">
+      <input
+        type="text"
+        className="input-field"
+        value={loginUsername}
+        onChange={(e) => setLoginUsername(e.target.value)}
+        placeholder="Username"
+      />
+      <input
+        type="password"
+        className="input-field"
+        value={loginPassword}
+        onChange={(e) => setLoginPassword(e.target.value)}
+        placeholder="Password"
+      />
+      <button className="button" onClick={handleLogin}>Login</button>
+    </div>
+
+    <div className="input-land">
+      <input
+        type="text"
+        className="input-field"
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
+        placeholder="Username"
+      />
+      <input
+        type="password"
+        className="input-field"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        placeholder="Password"
+      />
+      <input
+        type="number"
+        className="input-field"
+        value={wordSpeed}
+        onChange={(e) => setWordSpeed(parseInt(e.target.value))}
+        placeholder="Word Speed"
+      />
+      <button className="button" onClick={handleRegister}>Register</button>
+      <button className="button" onClick={handleUpdateSettings}>Update Settings</button>
+    </div>
+  </div>
+)}
+   
+
       {!showReader ? (
+
+        
+        
         <div className="input-area">
           <textarea
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
             placeholder="Enter text here..."
           />
-          <div>
-            <label>Display Speed: </label>
-            <input
-              type="range"
-              min="100"
-              max="1000"
-              value={displaySpeed}
-              onChange={(e) => setDisplaySpeed(e.target.value)}
-            />
-          </div>
-          <div>
-            <label>Voice Speed: </label>
-            <input
-              type="range"
-              min="0.5"
-              max="2"
-              step="0.1"
-              value={voiceSpeed}
-              onChange={(e) => setVoiceSpeed(e.target.value)}
-            />
-          </div>
-          {/*<input
-            type="text"
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Enter chat prompt here..."
-          />
-      */}
+
+      
           <button onClick={() => startReading()}>Start Reading</button>
           <button onClick={() => startReading(true)}>Start Audible Reading</button>
-          {/*<button onClick={summarizeText}>Summarize Text</button>
-      */}
-          <button onClick={handleChat}>Chat</button>
+     
+          <button onClick={handleChat}>Summarize</button>
+            
           {summary && <div className="summary">{summary}</div>}
           {response && <div className="response">{response}</div>}
         </div>
+        
       ) : (
-        <SpeedReader
-          text={userInput}
-          displaySpeed={displaySpeed}
-          voiceSpeed={voiceSpeed}
-          audibleReading={audibleReading}
-          onQuit={handleQuit}
-        />
+      <SpeedReader
+        text={userInput}
+        displaySpeed={wordSpeed}
+        audibleReading={audibleReading}
+        onQuit={handleQuit}
+      />
       )}
+      
     </div>
   );
 }

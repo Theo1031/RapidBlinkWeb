@@ -11,14 +11,25 @@ const SpeedReader = ({ onQuit, text, displaySpeed, voiceSpeed, audibleReading })
         setWords(text.split(' '));
     }, [text]);
 
+   
+    const [isSpeaking, setIsSpeaking] = useState(false);
+
     const speak = useCallback((word) => {
-        if (audibleReading) {
+        if (audibleReading && !isSpeaking) {
+            setIsSpeaking(true); 
             const utterance = new SpeechSynthesisUtterance(word);
             const rate = parseFloat(voiceSpeed);
-            utterance.rate = rate >= 0.1 && rate <= 10 ? rate : 1;
+            utterance.rate = isNaN(rate) ? 1.5 : rate; 
+
+            utterance.onend = () => {
+                setIsSpeaking(false); 
+                setCurrentWordIndex(currentIndex => currentIndex + 1);
+            };
+
             window.speechSynthesis.speak(utterance);
         }
-    }, [voiceSpeed, audibleReading]);
+    }, [voiceSpeed, audibleReading, isSpeaking]);
+
 
     useEffect(() => {
         let interval;
@@ -27,22 +38,25 @@ const SpeedReader = ({ onQuit, text, displaySpeed, voiceSpeed, audibleReading })
                 setCurrentWordIndex(prevIndex => {
                     const nextWordIndex = prevIndex + 1;
                     if (nextWordIndex < words.length) {
-                        if (audibleReading) {
-                            speak(words[nextWordIndex]);
+                        if (!audibleReading) {
+                            return nextWordIndex;  
                         }
-                        return nextWordIndex;
                     } else {
-                        clearInterval(interval);
-                        return prevIndex;
+                        clearInterval(interval);  
                     }
+                    return prevIndex;  
                 });
-            }, displaySpeed);
+            }, 1000 / displaySpeed);
         }
-        return () => {
-            clearInterval(interval);
-            window.speechSynthesis.cancel();
-        };
-    }, [words, displaySpeed, showAllWords, speak, audibleReading]);
+        return () => clearInterval(interval);
+    }, [displaySpeed, showAllWords, words, audibleReading]);
+
+    useEffect(() => {
+        if (audibleReading && currentWordIndex < words.length && !isSpeaking) {
+            speak(words[currentWordIndex]);
+        }
+    }, [currentWordIndex, words, speak, audibleReading, isSpeaking]);
+
 
     const handleWordSelect = (index) => {
         setCurrentWordIndex(index);
@@ -57,50 +71,39 @@ const SpeedReader = ({ onQuit, text, displaySpeed, voiceSpeed, audibleReading })
         onQuit();
     };
 
-    const summarizeText = () => {
-        const params = new URLSearchParams({ text }).toString();
-        fetch(`${process.env.REACT_APP_BACKEND_URL}/api/summarize?${params}`, {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-        })
-            .then(response => response.json())
-            .then(data => {
-                setSummary(data.summary);
-            })
-            .catch(error => console.error('Error:', error));
-    };
-
-    const handleChat = async () => {
-        try {
-            const res = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/chat`, { prompt: text });
-            setSummary(res.data);
-        } catch (error) {
-            console.error('Error during chat:', error.message);
-        }
-    };
-
     return (
-        <div className="speed-reader-backdrop">
+        <div 
+            className="speed-reader-backdrop" 
+            style={{ 
+                backgroundColor: audibleReading || !showAllWords ? 'black' : 'transparent',
+                color: 'white', 
+          
+            }}
+        >
             {!showAllWords ? (
                 <>
                     <div className="word-display">{words[currentWordIndex]}</div>
                     <button className="back-button" onClick={() => setShowAllWords(true)}>Look Back</button>
                     <button className="quit-button" onClick={handleQuit}>Quit</button>
-                    {/*<button onClick={summarizeText}>Summarize Text</button>*/}
-                    {/*<button onClick={handleChat}>Chat</button>*/}
                 </>
             ) : (
                 <div className="word-list">
                     {words.map((word, index) => (
-                        <span key={index} onClick={() => handleWordSelect(index)}>
+                        <span
+                            key={index}
+                            onClick={() => handleWordSelect(index)}
+                            style={index === currentWordIndex ? { backgroundColor: 'rgba(0, 0, 255, 0.8)' } : {}}
+                        >
                             {word + ' '}
                         </span>
                     ))}
                 </div>
             )}
-            {summary && <div className="summary">{summary}</div>}
         </div>
     );
+    
+    
+    
 }
 
 export default SpeedReader;
